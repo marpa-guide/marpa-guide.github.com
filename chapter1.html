@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html><head>
 <title>Chapter 1 - Getting Started</title>
+<meta charset='utf-8'>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet">
 <link href="style.css" rel="stylesheet">
@@ -91,7 +92,7 @@ number    ~ [\d]+
 <p>Marpa uses the <code>:start</code> rule to specify which rule should be matched first. The
 declaration operator <code>::=</code> separates the left side from the right side.</p>
 
-<p>The symbol on the left side of declaration operater is the name of the rule.
+<p>The symbol on the left side of the declaration operator is the name of the rule.
 The symbols on the right side of the operator specify what it matches to.</p>
 
 <p>The next example shows how easy it is to improve that grammar to parse multiple
@@ -108,7 +109,7 @@ ws        ~ [\s]+
 <p>As you can see it includes a new rule called <code>numbers</code>. This rule matches with
 one or more numbers. We specify this with the <code>+</code> operator after a name.</p>
 
-<p>At the end of the <code>numbers</code> rule we specfify the token that separates the
+<p>At the end of the <code>numbers</code> rule we specify the token that separates the
 numbers, in this case the <code>&lt;ws&gt;</code> token. We do this by adding the <code>separator</code>
 adverb. Abverbs can be used as options to a grammar rule. Lexical rules don't
 support adverbs.</p>
