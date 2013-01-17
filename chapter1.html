@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html><head>
+<title>Chapter 1 - Getting Started</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link href="style.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="offset2 span8">
+<p>Chapter 1</p>
+
+<h1>Getting Started</h1>
+
+<p><a href="index.html">Top</a></p>
+
+<h2>What is Marpa?</h2>
+
+<p>Marpa is a new kind of parser.</p>
+
+<h2>Getting the code</h2>
+
+<p>Marpa is a Perl library. We will use
+<a href="http://metacpan.org/dist/Marpa-R2">Marpa::R2</a> for the examples in this guide.</p>
+
+<p>If you have Perl already installed you can install Marpa with <code>cpan</code> or <code>cpanm</code>.</p>
+
+<pre class="prettyprint linenums"><code>$ cpan Marpa::R2
+</code></pre>
+
+<p>or</p>
+
+<pre class="prettyprint linenums"><code>$ cpanm Marpa::R2
+</code></pre>
+
+<p>This will install Marpa::R2.</p>
+
+<p>In the rest of this guide we'll assume you have installed Marpa::R2. The examples
+that end in '.pl' can be executed.</p>
+
+<h2>First example</h2>
+
+<p>Let's start with an example. What follows is the smallest code that could parse
+a number.</p>
+
+<pre class="prettyprint linenums"><code>use strict;
+use Marpa::R2;
+
+my $g = Marpa::R2::Scanless::G-&gt;new({
+        action_object  =&gt; 'main',
+        default_action =&gt; 'do_first_arg',
+        source         =&gt; \(&lt;&lt;'END_OF_SOURCE'),
+
+:start        ::= number
+number          ~ [\d]+
+
+END_OF_SOURCE
+});
+
+my $re = Marpa::R2::Scanless::R-&gt;new({ grammar =&gt; $g });
+my $input = $ARGV[0];
+
+print "Trying to parse:\n$input\n";
+eval { $re-&gt;read(\$input) };
+print $@ || 'ok';
+print "\n";
+</code></pre>
+
+<p class='example-filename'><a href='examples/number.pl'>examples/number.pl</a></p>
+
+<p>In this example we parse a number using the <code>\d</code> character class. The character
+classes used by Marpa are the same as those used by Perl.</p>
+
+<p>You can run the code by calling it with <code>perl</code>.</p>
+
+<pre class="prettyprint linenums"><code>$ perl number.pl 9999
+Trying to parse:
+9999
+ok
+</code></pre>
+
+<p>In the next sections we'll just use the notation used by Marpa.</p>
+
+<pre class="prettyprint linenums"><code>:start  ::= number
+number    ~ [\d]+
+</code></pre>
+
+<p class='example-filename'><a href='examples/number2.pl'>examples/number2.pl</a></p>
+
+<p>Marpa uses the <code>:start</code> rule to specify which rule should be matched first. The
+declaration operator <code>::=</code> separates the left side from the right side.</p>
+
+<p>The symbol on the left side of declaration operater is the name of the rule.
+The symbols on the right side of the operator specify what it matches to.</p>
+
+<p>The next example shows how easy it is to improve that grammar to parse multiple
+numbers separated by whitespace.</p>
+
+<pre class="prettyprint linenums"><code>:start  ::= numbers
+numbers ::= number+               separator =&gt; &lt;ws&gt;
+number    ~ [\d]+
+ws        ~ [\s]+
+</code></pre>
+
+<p class='example-filename'><a href='examples/numbers.pl'>examples/numbers.pl</a></p>
+
+<p>As you can see it includes a new rule called <code>numbers</code>. This rule matches with
+one or more numbers. We specify this with the <code>+</code> operator after a name.</p>
+
+<p>At the end of the <code>numbers</code> rule we specfify the token that separates the
+numbers, in this case the <code>&lt;ws&gt;</code> token. We do this by adding the <code>separator</code>
+adverb. Abverbs can be used as options to a grammar rule. Lexical rules don't
+support adverbs.</p>
+
+<p>The <code>number</code> token stays the same and we add a new lexical rule for whitespace.</p>
+
+<p>This grammar will parse input strings like this following.</p>
+
+<pre class="prettyprint linenums"><code>123    9 45 83 1000 1001          39201
+</code></pre>
+
+<p>The input string with numbers could be much longer than this as long as each
+number is separated by one or more whitespace characters. This includes spaces,
+tabs and newlines.</p>
+
+<h3>Lexical rules</h3>
+
+<p>A lexical rule specifies which characters can be matched in the input string. A
+lexical rule can contain character classes and quoted strings.</p>
+
+<p>A character class specifies each character or group of characters that can be
+matched. These character classes are evaluated by Perl. This means that
+everything that would work in Perl itself, can be used in a Marpa character
+class. We already saw how to match a number. This is how you could match a
+variable name.</p>
+
+<pre class="prettyprint linenums"><code>identifier      ~ [_a-zA-Z] id_rest
+id_rest         ~ [_0-9a-zA-Z]*
+</code></pre>
+
+<p class='example-filename'><a href='examples/identifier.pl'>examples/identifier.pl</a></p>
+
+<p>The rule for matching an identifier (or name) is split into two rules. The first
+rule specifies the structure of the token. The first part of it matches the
+first character of an identifier. It can be an underscore, a lowercase
+character or an uppercase character. It can't be a number however. <br />
+The second part <code>id_rest</code> references the second rule, which specifies the
+rest of the identifier. This can include numbers as well. The asterisk <code>*</code> at the
+end says that this character class can match zero of more times.</p>
+
+<p>The asterisk is also the reason why we split the identifier rule into two
+parts. The asterisk can only be used on rules with a single item on the right
+hand side.</p>
+
+<p>A lexical rule can also use a quoted string. A quoted string are surrounded
+with single quotes <code>'</code>. The text between the quotes will match as literal text.
+You could use this for single characters or keywords.</p>
+
+<pre class="prettyprint linenums"><code>kw_for    ~ 'for'
+kw_if     ~ 'if'
+</code></pre>
+        </div>
+    </div>
+    <div class="row footer">
+        <div class="offset2 span8">
+            <p>
+                <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="float:left; margin-right:12px; border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Marpa Guide</span> by <span xmlns:cc="http://creativecommons.org/ns#" property="cc:attributionName">Peter Stuifzand and Contributors</span> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-ShareAlike 3.0 Unported License</a> and the <a rel="license" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License 1.3</a></p>
+        </div>
+    </div>
+</div>
+<script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/js/bootstrap.min.js"></script>
+</body></html>
