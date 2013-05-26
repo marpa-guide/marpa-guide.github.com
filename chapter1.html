@@ -313,7 +313,7 @@ We add another line to <code>rule</code>. The reference is like a username.</p>
 
 <p class='example-filename'><a href='examples/deny-allow2.pl'>examples/deny-allow2.pl</a></p>
 
-<p>When we run it the parse succeeds, but the result is not completely right.</p>
+<p>When we run this code, the parse succeeds, but the result is not completely right.</p>
 
 <pre class="prettyprint linenums"><code>[
     'Allow',
@@ -322,8 +322,13 @@ We add another line to <code>rule</code>. The reference is like a username.</p>
 ]
 </code></pre>
 
-<p>The <code>@</code> and <code>admins</code> is parsed in two parts. We like the reference to be a single
-thing. We change this be making a lexical rule for the <code>list_ref</code>.</p>
+<p>The <code>@</code> and <code>admins</code> is parsed in two parts. We like the reference to be a
+single thing. Another problem with this version is that there can be spaces
+between the '@' and the name after it. This is not what we mean. The '@' and
+the name should always be part of the same lexeme. We change this be making a
+lexical rule for the <code>list_ref</code>.</p>
+
+<p><strong>When two tokens should never be separated, make them part of the same lexical rule.</strong></p>
 
 <pre class="prettyprint linenums"><code>rule          ::= cmd_type username
                 | cmd_type list_ref
@@ -377,14 +382,31 @@ users      ::= user+
 
 <p class='example-filename'><a href='examples/deny-allow5.pl'>examples/deny-allow5.pl</a></p>
 
+<p>This change now allows us to specify multiple users in a user_list. The change
+that allows us to specify multiple users on an <code>Allow</code> or <code>Deny</code> line is
+featured in Exercise 1.1.</p>
+
+<p>If that change is completed this language allows us to easily specify users
+that allowed or denied access to a particular thing. The design of the language
+leaves out specification of that particular thing to keep the design simple and
+general.</p>
+
 <h3>Exercise</h3>
 
 <ol>
-<li><p><strong>Multiple users</strong> &mdash; Change the grammar to allow multiple users on the <code>Allow</code> or <code>Deny</code> line. For example:</p>
+<li><p><strong>Multiple users</strong> &mdash; Change the grammar to allow multiple users on the
+<code>Allow</code> or <code>Deny</code> line. For example:</p>
 
 <pre class="prettyprint linenums"><code>Allow root admin
 Deny baduser cracker
 </code></pre></li>
+<li><p><strong>All users</strong> &mdash; Add a rule that allows you to specify <code>all</code> or
+'everybody' as a rule that denies or allows everyone.</p></li>
+<li><p><strong>Implementation</strong> &mdash; Implement a class <code>Authorization</code> with a method
+<code>CanAccess($username)</code> that return true if a user is allowed access and false
+if the user is denied access. The contructor of the class takes a source string
+in the language that we specified above. The rules that the parser creates
+should be checked in sequence.</p></li>
 </ol>
         </div>
     </div>
