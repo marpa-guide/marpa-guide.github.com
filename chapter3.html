@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html><head>
-<title>Chapter 3 - Parsing an Expression</title>
+<title>Chapter 3 - A small language for declarations</title>
 <meta charset='utf-8'>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet">
@@ -12,102 +12,241 @@
         <div class="offset2 span8">
 <p>Chapter 3</p>
 
-<h1>Parsing an Expression</h1>
+<h1>A small language for declarations</h1>
 
-<p><a href="index.html">Top</a></p>
+<p>In this chapter we'll look a small language thats helps a declare which people
+or groups of people are allowed to use something.</p>
 
-<p>Parsers shine in situations where there are many discrete parts in sequence
-with a certain structure. A grammar describes the rules of this structure.</p>
+<h3>Keywords</h3>
 
-<p>The discrete parts of the structure are the lexemes (or tokens) that make up
-the sequences. The lexemes are groups of one or more characters. These are the
-atoms of the language.</p>
+<p>Let's take a look at a small declarative part of a language with two keywords: 'Deny', 'Allow'.</p>
 
-<p>Any group of characters will do. And the nice thing is that for a grammar it
-doesn't matter what these characters look like. The rules of the grammar only
-describe how these lexeme relate to each other.</p>
-
-<p>Let's start with a little example of an input string.</p>
-
-<pre class="prettyprint linenums"><code>100+200
+<pre class="prettyprint linenums"><code>Deny baduser
+Allow admin
 </code></pre>
 
-<p>The lexemes of this input string depends of the language. Let's say we want to
-create a grammar that understands the structure of a number followed by an
-operator "+", followed by another number.</p>
+<p>The semantics (or meaning) of the language could be anything. Parsing the
+language can be really easy with Marpa.</p>
 
-<pre class="prettyprint linenums"><code>language ::= number op_plus number
+<pre class="prettyprint linenums"><code>:start        ::= rules
+rules         ::= rule+
+
+rule          ::= cmd_type username
+
+cmd_type        ~ 'Deny' | 'Allow'
+username        ~ [\w]+
+
+:discard        ~ ws
+ws              ~ [\s]+
 </code></pre>
 
-<p>In Marpa this means <code>language</code> is defined as <code>number</code> followed by <code>op_plus</code>
-followed by <code>number</code>. Marpa doesn't know what each of the names means. To remedy that we will
-write the definitions of the lexemes.</p>
-
-<pre class="prettyprint linenums"><code>number  ~ [\d]+
-op_plus ~ '+'
-</code></pre>
-
-<p>The complete grammar looks like the following.</p>
-
-<pre class="prettyprint linenums"><code>:start    ::= language
-
-language  ::= number op_plus number
-
-number    ~ [\d]+
-op_plus   ~ '+'
-</code></pre>
-
-<p class='example-filename'><a href='examples/number2-1.pl'>examples/number2-1.pl</a></p>
-
-<p>When we run the program we get the output that follows:</p>
+<p class='example-filename'><a href='examples/deny-allow.pl'>examples/deny-allow.pl</a></p>
 
 <pre class="prettyprint linenums"><code>Trying to parse:
-100+200
+Deny baduser
+Allow admin
+
 Output:
 $VAR1 = [
-    '100',
-    '+',
-    '200'
+    [
+        'Deny',
+        'baduser'
+    ],
+    [
+        'Allow',
+        'admin'
+    ]
 ];
 </code></pre>
 
-<h2>Whitespace</h2>
+<p>The output shows that Marpa parsed two rules. The first rule with the
+'Deny' keyword and the second with the 'Allow' keyword. It seems that the
+keywords could interfere with the usernames. The <code>cmd_type</code>s are a subset of
+the usernames.</p>
 
-<p>Now try and add some whitespace between certain tokens. A space after the first
-number. Marpa will complain that it can't lex a certain character:</p>
+<p>Let's see what happens when we change the first username from baduser to Allow.
+Can Marpa see the difference between keywords and usernames?</p>
 
-<pre class="prettyprint linenums"><code>Lexing failed at unacceptable character 0x0020 (non-graphic character)
+<pre class="prettyprint linenums"><code>Output:
+$VAR1 = [
+    [
+        'Deny',
+        'Allow'
+    ],
+    [
+        'Allow',
+        'admin'
+    ]
+];
 </code></pre>
 
-<p>We would like to be able to parse expression with whitespace between them.
-There are two ways to do that. One way is to add a whitespace lexeme in every
-place where whitespace could occur. Let start with an example.</p>
+<p>It doesn't matter that the first username matches a <code>cmd_type</code>. Marpa knows
+that the word 'Allow' could also be a username.</p>
 
-<pre class="prettyprint linenums"><code>language  ::= (ws) number (ws) op_plus (ws) number (ws)
+<p>Now let's see what happens when we use an input that doesn't match by switching
+around the username and the keyword. A keyword could be a username, but it
+can't be the other way around.</p>
 
-ws        ::= sp
-ws        ::=
+<p>I change the input to:</p>
 
-sp          ~ [ ]+
+<pre class="prettyprint linenums"><code>baduser Deny
+admin Allow
 </code></pre>
 
-<p class='example-filename'><a href='examples/number2-2.pl'>examples/number2-2.pl</a></p>
+<p>When we run the examples we get the following output:</p>
 
-<p>We fix the whitespace problem by adding an optional whitespace token at every
-place where it could occur. This makes for one big mess, especially if you have
-many rules, each with specific whitespace requirements.</p>
-
-<p>The other way to parse rules with whitespace in between lexemes is with the
-<code>:discard</code> pseudo rule. This rule allow you to specify which parts of the input
-stream Marpa should discard when it encounters these.</p>
-
-<pre class="prettyprint linenums"><code>language  ::= number op_plus number
-
-:discard    ~ sp
-sp          ~ [ ]+
+<pre class="prettyprint linenums"><code>Error in SLIF G1 read: No lexemes accepted at position 0
+* String before error: baduser
+* The error  was at line 1, column 8, and at character 0x0020 (non-graphic character), ...
+* here:  Deny\nadmin Allow\n
+Marpa::R2 exception at examples/deny-allow.pl line 33.
 </code></pre>
 
-<p class='example-filename'><a href='examples/number2-3.pl'>examples/number2-3.pl</a></p>
+<p>Marpa tries to point to the error as best as it can. Marpa starts with the
+problem: <code>No lexemes accepted at position 0</code>. This is Marpa's way of telling us
+that Marpa couldn't find a way to match <code>baduser</code> to one of the expected
+lexemes, <code>Deny</code> or <code>Allow</code>.</p>
+
+<h3>More syntax</h3>
+
+<p>Now let's add a way to specify groups of users. The syntax could look like this.</p>
+
+<pre class="prettyprint linenums"><code>admins = admin root
+Deny baduser
+Allow @admins
+</code></pre>
+
+<p>The first line specifies a list of admin users. The second line stays the same
+and the third line contains a reference to the <code>admins</code> list of users. The <code>@</code>
+operators makes it a reference.</p>
+
+<p>We start by changing the input in the file. We run the code and find that it
+doesn't parse. That's what we expected.</p>
+
+<p>Now we need to add a rule for parsing the <code>admins = ...</code> line. In this case
+<code>admins</code> is similar to a username so let's use that.</p>
+
+<pre class="prettyprint linenums"><code>user_list  ::= username '=' username username
+</code></pre>
+
+<p>This line should work. We add it in the grammar. Let's add it to the
+<code>rule</code> rule as an alternative. We use the <code>|</code> (or) operator.</p>
+
+<pre class="prettyprint linenums"><code>rule    ::= cmd_type username
+          | user_list
+</code></pre>
+
+<p>When we run this code we get the following:</p>
+
+<pre class="prettyprint linenums"><code>Lexing failed at unacceptable character 0x0040 '@'
+Marpa::R2 exception at examples/deny-allow2.pl line 37.
+</code></pre>
+
+<p>Marpa doesn't like the '@' character in the third line. Let's add that.
+We add another line to <code>rule</code>. The reference is like a username.</p>
+
+<pre class="prettyprint linenums"><code>rule          ::= cmd_type username
+                | cmd_type '@' username
+                | user_list
+</code></pre>
+
+<p class='example-filename'><a href='examples/deny-allow2.pl'>examples/deny-allow2.pl</a></p>
+
+<p>When we run this code, the parse succeeds, but the result is not completely right.</p>
+
+<pre class="prettyprint linenums"><code>[
+    'Allow',
+    '@',
+    'admins'
+]
+</code></pre>
+
+<p>The <code>@</code> and <code>admins</code> is parsed in two parts. We like the reference to be a
+single thing. Another problem with this version is that there can be spaces
+between the '@' and the name after it. This is not what we mean. The '@' and
+the name should always be part of the same lexeme. We change this by making a
+lexical rule for the <code>list_ref</code>.</p>
+
+<p><strong>When two tokens should never be separated, make them part of the same lexical rule.</strong></p>
+
+<pre class="prettyprint linenums"><code>rule          ::= cmd_type username
+                | cmd_type list_ref
+                | user_list
+
+list_ref        ~ '@' username
+</code></pre>
+
+<p class='example-filename'><a href='examples/deny-allow3.pl'>examples/deny-allow3.pl</a></p>
+
+<p>Now let's run <code>deny-allow3.pl</code>.</p>
+
+<pre class="prettyprint linenums"><code>Symbol &lt;username&gt; is a lexeme in G1, but not in G0.
+  This may be because &lt;username&gt; was used on a RHS in G0.
+  A lexeme cannot be used on the RHS of a G0 rule.
+Marpa::R2 exception at examples/deny-allow3.pl line 6.
+</code></pre>
+
+<p>This gives us a look into the inner workings of Marpa. This error message says
+that we can't use a lexeme in both the structural rules (G1) and lexical rules
+(G0). We need to create two lexical rules: one for <code>rule</code> and <code>user_list</code> and
+one for <code>list_ref</code>.</p>
+
+<pre class="prettyprint linenums"><code>rule          ::= cmd_type user
+                | cmd_type list_ref
+                | user_list
+
+user_list  ::= user '=' user user
+
+list_ref        ~ '@' username
+user            ~ username
+</code></pre>
+
+<p class='example-filename'><a href='examples/deny-allow4.pl'>examples/deny-allow4.pl</a></p>
+
+<p>With these changes we can parse the input without problems. The output shows
+what we expected.</p>
+
+<h3>Multiple users</h3>
+
+<p>Even though the code works, it could be that you saw a problem with this. Ask
+yourself what would happen if you specify more or less than two users on the
+right side of a <code>user_list</code>? Try it.</p>
+
+<p>The parser doesn't know what to do with the extra user in the list.
+Let's change <code>user_list</code> to allow multiple users.</p>
+
+<pre class="prettyprint linenums"><code>user_list  ::= user '=' users
+users      ::= user+
+</code></pre>
+
+<p class='example-filename'><a href='examples/deny-allow5.pl'>examples/deny-allow5.pl</a></p>
+
+<p>This change now allows us to specify multiple users in a user_list. The change
+that allows us to specify multiple users on an <code>Allow</code> or <code>Deny</code> line is
+featured in Exercise 1.1.</p>
+
+<p>With that change this language allows us to easily specify users that are
+allowed or denied access to a particular thing. The design of the language
+leaves out the specification of that particular thing to keep the design simple
+and general.</p>
+
+<h3>Exercise</h3>
+
+<ol>
+<li><p><strong>Multiple users</strong> &mdash; Change the grammar to allow multiple users on the
+<code>Allow</code> or <code>Deny</code> line. For example:</p>
+
+<pre class="prettyprint linenums"><code>Allow root admin
+Deny baduser cracker
+</code></pre></li>
+<li><p><strong>All users</strong> &mdash; Add a rule that allows you to specify <code>all</code> or
+'everybody' as a rule that denies or allows everyone.</p></li>
+<li><p><strong>Implementation</strong> &mdash; Implement a class <code>Authorization</code> with a method
+<code>CanAccess($username)</code> that return true if a user is allowed access and false
+if the user is denied access. The contructor of the class takes a source string
+in the language that we specified above. The rules that the parser creates
+should be checked in sequence.</p></li>
+</ol>
         </div>
     </div>
     <div class="row footer">

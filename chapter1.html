@@ -18,7 +18,7 @@
 
 <h2>What is Marpa?</h2>
 
-<p>Marpa is library written in C, with a Perl wrapper. It is dedicated to <a href="https://en.wikipedia.org/wiki/Parsing">parsing</a>.
+<p>Marpa is a library written in C, with a Perl wrapper. It is dedicated to <a href="https://en.wikipedia.org/wiki/Parsing">parsing</a>.
 That is, people who wish to write parsers incorporate Marpa into their programs.</p>
 
 <p>You start using Marpa by providing it with 2 inputs, a grammar and an input stream which may or may not conform to
@@ -64,14 +64,14 @@ until it Just Works. This tells us that the point of the test data is to test th
 
 <h2>Constructing a mental picture of lexing and parsing</h2>
 
-<p>With the advent of Marpa's SLIF, we need to feel comfortable with both Marpa's approach and the fact that, classically,
+<p>With the advent of Marpa's Scanless Interface, or SLIF, we need to feel comfortable with both Marpa's approach and the fact that, classically,
 lexing and parsing were often such visibly distinct phases, perhaps even requiring 2 programs.</p>
 
 <p>Marpa's SLIF follows the classical separation of lexing and parsing, but it introduces a notation which is
 friendly to those programmers more accustomed to regular expressions and recursive descent.</p>
 
 <p>So instead of two completely separate modules, lexer and parser, each with its own interface, you have a single
-DSL source  file, and the lexing and parsing statements look similar, with only the  different operators
+source  file for your domain-specific language (DSL), and the lexing and parsing statements look similar, with only the  different operators
 ("::=" versus "~") to tell them apart.</p>
 
 <p>Underneath however, in the implementation, the distinction is still there, as sharp as ever.</p>
@@ -105,7 +105,7 @@ Is there another way to view this?</p>
 
 graph_grammar           ::= graph_definition    action =&gt; graph
 
-graph definition        ::= node_definition
+graph_definition        ::= node_definition
                             | edge_definition
 
 node_definition         ::= node_statement
@@ -126,18 +126,18 @@ See <a href="http://savage.net.au/Ron/html/stringparser.svg">this SVG version</a
 A simplistic view of this is that a grammar expressed as a multi-line string is converted into the same grammar
 expressed as a tree.</p>
 
-<p>For more on this, see Wikipeida's article on
+<p>For more on this, see Wikipedia's article on
 <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree">Abstract Syntax Trees</a>.</p>
 
 <p>And these structures combined with the input stream, become the basis for the recognition and evaluation phases.</p>
 
 <p>Briefly, the parsing process converted a grammar as a tree, plus input, into another structure, representable as a
 tree, which is evaluated (analyzed) as per instructions embedded in the grammar. An example of such an instruction is
-given above as 'action => graph', which exact effect will be discussed later.</p>
+given above as <code>action =&gt; graph</code>, which exact effect will be discussed later.</p>
 
 <h2>But why not use regular expressions?</h2>
 
-<p>Regular expressions are a brilliant invention, and a perfectly suited for many applications.</p>
+<p>Regular expressions are a brilliant invention, and perfectly suited for many applications.</p>
 
 <p>But the requirement to process structured grammars, and solutions such as Marpa, are what distinguises parsing
 from lexing and regular expressions.</p>
@@ -145,15 +145,23 @@ from lexing and regular expressions.</p>
 <p>Lexers and regular expressions recognize strings, but do not assign any structure to them.</p>
 
 <p>When captures are added to regular expressions, you begin to see bits and pieces of a structure, but regular
-expressions and captures have a hard time with a structure of any complexity, and when the structure is recursive,
+expressions and captures have a hard time with a structure of any complexity, or when the structure is recursive,
 they break down completely.</p>
 
 <p>You can see such a case above, in the last rule, where 'node_statement' is defined to be a series of 'node_statement's
 separated by commas.</p>
 
+<p>Theoretical computer science tells us that grammars like Marpa model a "context-free"
+class of languages (CFGs), and cover the next level of expressivity beyond regular languages
+(which is what "regular expressions" got their name after). While context-free languages are still limited enough
+to guarantee efficient parsing algorithms, they are expressive enough to parse e.g. all programming languages and a
+rather large subset of natural languages. As a hallmark example of a context-free structure, think of balancing
+opening and closing parantheses. While a CFG grammar, which can be understood by Marpa, can directly model <code>a-(b*(c/d))</code> ,
+that is not possible when using a single regular expression.</p>
+
 <h2>Where does the grammar come from?</h2>
 
-<p>The easiest approach is to copy a suitable grammar, but if that's not possible, we must write it, bit by bit.</p>
+<p>The easiest approach is to copy a suitable grammar. If that's not possible, we must write it, bit by bit.</p>
 
 <p>And this leads to developing a set of test files, which purpose is to test the grammar also bit by bit.
 This includes tests that are deliberately faulty. That is, some tests must cause Marpa to report a syntax error
@@ -191,6 +199,10 @@ you want Marpa to treat your input stream.</p>
 
 <p>In the rest of this guide we'll assume you have installed Marpa::R2. The examples
 that end in '.pl' can be executed using <code>perl</code>.</p>
+
+<h2>Next step</h2>
+
+<p><a href="chapter2.html">Chapter 2: Parsing numbers</a></p>
         </div>
     </div>
     <div class="row footer">
